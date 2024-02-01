@@ -1,6 +1,20 @@
 import streamlit as st
 import requests
 import json
+import speech_recognition as sr
+
+def transcribe_audio(audio_file):
+    recognizer = sr.Recognizer()
+    with sr.AudioFile(audio_file) as source:
+        audio_data = recognizer.record(source)  # Leer el archivo de audio
+
+    try:
+        text = recognizer.recognize_google(audio_data, language='es')  # Reconocer el audio
+        return text
+    except sr.UnknownValueError:
+        return "No se pudo entender el audio"
+    except sr.RequestError as e:
+        return "Error al solicitar la transcripción; {0}".format(e)
 
 def transcribe_and_order_notes(notes):
     # Llamada a la API para transcribir notas
@@ -33,15 +47,20 @@ def transcribe_and_order_notes(notes):
 # Configuración de la aplicación Streamlit
 st.title("Transcripción de notas de voz y autobiografía")
 
-# Entrada de texto para las notas de voz
-notes_input = st.text_area("Ingresa tus notas de voz aquí:")
+# Subida de archivo de audio
+audio_file = st.file_uploader("Cargar archivo de audio", type=["mp3", "wav"])
 
 # Botón para iniciar el proceso de transcripción y ordenación
 if st.button("Generar autobiografía"):
-    if notes_input:
-        st.write("Transcribiendo y ordenando notas...")
-        autobiography = transcribe_and_order_notes(notes_input)
+    if audio_file is not None:
+        st.write("Transcribiendo notas de voz...")
+        audio_text = transcribe_audio(audio_file)
+        st.write("Texto transcrito:")
+        st.write(audio_text)
+
+        st.write("Generando autobiografía...")
+        autobiography = transcribe_and_order_notes(audio_text)
         st.write("Autobiografía generada:")
         st.write(autobiography)
     else:
-        st.write("Por favor, ingresa algunas notas de voz para generar la autobiografía.")
+        st.write("Por favor, carga un archivo de audio para generar la autobiografía.")
